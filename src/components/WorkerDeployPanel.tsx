@@ -225,26 +225,26 @@ export function WorkerDeployPanel({ dashboard, onUpdate }: WorkerDeployPanelProp
             <div className="font-mono text-xs font-semibold text-emerald-400">01</div>
             <div className="mt-2 text-xs font-semibold text-[#E6EDF3]">ساخت خودکار جداول D1</div>
             <p className="mt-1.5 text-xs leading-5 text-[#94A3B8]">
-              ورکر <span className="font-mono text-[#CBD5E1]">worker/index.js</span> در اولین درخواست، جداول دیتابیس{' '}
-              <span dir="ltr" className="font-mono text-[#CBD5E1]">a16983d7...</span> را خودکار می‌سازد (یا از{' '}
-              <span className="font-mono text-[#CBD5E1]">schema.sql</span> استفاده کنید).
+              ورکر <span className="font-mono text-[#CBD5E1]">worker/index.js</span> بدون نیاز به هاست جداگانه، جداول دیتابیس{' '}
+              <span dir="ltr" className="font-mono text-[#CBD5E1]">a16983d7...</span> را خودکار می‌سازد.
             </p>
           </div>
           <div className="rounded-lg border border-[#1E293B] bg-[#090D14] p-4">
             <div className="font-mono text-xs font-semibold text-emerald-400">02</div>
-            <div className="mt-2 text-xs font-semibold text-[#E6EDF3]">اتصال D1 به Worker</div>
+            <div className="mt-2 text-xs font-semibold text-[#E6EDF3]">هماهنگی نام ورکر در wrangler.toml</div>
             <p className="mt-1.5 text-xs leading-5 text-[#94A3B8]">
-              در <span className="font-mono text-[#CBD5E1]">wrangler.toml</span> یا تنظیمات Worker بخش Bindings، دیتابیس D1 با نام{' '}
-              <span className="font-mono text-[#CBD5E1]">DB</span> متصل است.
+              خط اول <span className="font-mono text-[#CBD5E1]">wrangler.toml</span> باید دقیقاً هم‌نام ورکر شما (مثلاً{' '}
+              <span className="font-mono text-[#CBD5E1]">vpn</span>) و اتصال D1 با نام{' '}
+              <span className="font-mono text-[#CBD5E1]">DB</span> فعال باشد.
             </p>
           </div>
           <div className="rounded-lg border border-[#1E293B] bg-[#090D14] p-4">
             <div className="font-mono text-xs font-semibold text-emerald-400">03</div>
-            <div className="mt-2 text-xs font-semibold text-[#E6EDF3]">اتصال Custom Domain</div>
+            <div className="mt-2 text-xs font-semibold text-[#E6EDF3]">اتصال Custom Domain بدون هاست</div>
             <p className="mt-1.5 text-xs leading-5 text-[#94A3B8]">
-              در تنظیمات Worker بخش Domains &amp; Routes دامنه{' '}
+              در تنظیمات ورکر فعال بخش Domains &amp; Routes دامنه{' '}
               <span dir="ltr" className="font-mono text-[#CBD5E1]">{dashboard.settings.domain}</span>{' '}
-              را به‌عنوان Custom Domain اضافه کنید تا Error 523 برطرف شود.
+              را به‌عنوان Custom Domain ثبت کنید تا Error 522/523 برطرف شود.
             </p>
           </div>
           <div className="rounded-lg border border-[#1E293B] bg-[#090D14] p-4">

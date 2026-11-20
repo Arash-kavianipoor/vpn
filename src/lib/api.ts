@@ -11,19 +11,26 @@ import type {
 } from '../types.ts';
 
 const TOKEN_STORAGE_KEY = 'arash_proxy_session_token';
-const STATIC_MODE_KEY = 'arash_proxy_static_mode';
+const PREVIEW_MODE_KEY = 'arash_proxy_preview_mode';
+
+function isPreviewEnvironment(): boolean {
+  if (typeof window === 'undefined') return false;
+  return window.location.hostname.endsWith('.run.app');
+}
 
 function isStaticEdgeMode(): boolean {
+  if (!isPreviewEnvironment()) return false;
   try {
-    return sessionStorage.getItem(STATIC_MODE_KEY) === '1';
+    return sessionStorage.getItem(PREVIEW_MODE_KEY) === '1';
   } catch {
     return false;
   }
 }
 
 function enableStaticEdgeMode(): void {
+  if (!isPreviewEnvironment()) return;
   try {
-    sessionStorage.setItem(STATIC_MODE_KEY, '1');
+    sessionStorage.setItem(PREVIEW_MODE_KEY, '1');
   } catch {}
 }
 
@@ -47,15 +54,15 @@ export function setStoredToken(token: string | null): void {
   }
 }
 
-class StaticHostFallbackError extends Error {
+class PreviewFallbackError extends Error {
   constructor() {
-    super('STATIC_HOST_405');
+    super('PREVIEW_ONLY_FALLBACK');
   }
 }
 
 async function apiRequest<T>(url: string, options: RequestInit = {}): Promise<T> {
   if (isStaticEdgeMode()) {
-    throw new StaticHostFallbackError();
+    throw new PreviewFallbackError();
   }
 
   const token = getStoredToken();
@@ -73,10 +80,16 @@ async function apiRequest<T>(url: string, options: RequestInit = {}): Promise<T>
   });
 
   const contentType = res.headers.get('content-type') || '';
-  // Static hosts (Nginx/Cloudflare Pages/ais-pre) return 405 or HTML fallback on POST /api/*
-  if (res.status === 405 || res.status === 501 || (!contentType.includes('application/json') && res.status >= 400)) {
+  if (isPreviewEnvironment() && (res.status === 405 || res.status === 501)) {
     enableStaticEdgeMode();
-    throw new StaticHostFallbackError();
+    throw new PreviewFallbackError();
+  }
+
+  if (!contentType.includes('application/json')) {
+    const rawText = await res.text().catch(() => '');
+    throw new Error(
+      `پاسخ غیرمنتظره از Cloudflare Worker (${res.status}): ${rawText.slice(0, 120) || 'عدم اجرای اسکریپت ورکر'}`
+    );
   }
 
   const data = await res.json().catch(() => ({}));
@@ -98,7 +111,7 @@ export async function login(username: string, password: string): Promise<{ token
     setStoredToken(data.token);
     return { token: data.token, username: data.username };
   } catch (err) {
-    if (err instanceof StaticHostFallbackError) {
+    if (err instanceof PreviewFallbackError) {
       const res = await staticVault.login(username, password);
       setStoredToken(res.token);
       return res;
@@ -114,7 +127,7 @@ export async function checkSession(): Promise<{ authenticated: boolean; username
   try {
     return await apiRequest<{ authenticated: boolean; username: string }>('/api/auth/session');
   } catch (err) {
-    if (err instanceof StaticHostFallbackError) {
+    if (err instanceof PreviewFallbackError) {
       return staticVault.checkSession();
     }
     setStoredToken(null);
@@ -141,7 +154,7 @@ export async function fetchDashboard(): Promise<DashboardState> {
   try {
     return await apiRequest<DashboardState>('/api/dashboard');
   } catch (err) {
-    if (err instanceof StaticHostFallbackError) {
+    if (err instanceof PreviewFallbackError) {
       return staticVault.getDashboard();
     }
     throw err;
@@ -163,7 +176,7 @@ export async function createProxyToken(payload: {
       body: JSON.stringify(payload),
     });
   } catch (err) {
-    if (err instanceof StaticHostFallbackError) {
+    if (err instanceof PreviewFallbackError) {
       return staticVault.createToken(payload);
     }
     throw err;
@@ -180,7 +193,7 @@ export async function updateProxyToken(
       body: JSON.stringify(payload),
     });
   } catch (err) {
-    if (err instanceof StaticHostFallbackError) {
+    if (err instanceof PreviewFallbackError) {
       return staticVault.updateToken(id, payload);
     }
     throw err;
@@ -193,7 +206,7 @@ export async function rotateProxyToken(id: string): Promise<{ token: ProxyToken;
       method: 'POST',
     });
   } catch (err) {
-    if (err instanceof StaticHostFallbackError) {
+    if (err instanceof PreviewFallbackError) {
       return staticVault.rotateToken(id);
     }
     throw err;
@@ -206,7 +219,7 @@ export async function deleteProxyToken(id: string): Promise<{ dashboard: Dashboa
       method: 'DELETE',
     });
   } catch (err) {
-    if (err instanceof StaticHostFallbackError) {
+    if (err instanceof PreviewFallbackError) {
       return staticVault.deleteToken(id);
     }
     throw err;
@@ -222,7 +235,7 @@ export async function updateSystemSettings(
       body: JSON.stringify(settings),
     });
   } catch (err) {
-    if (err instanceof StaticHostFallbackError) {
+    if (err instanceof PreviewFallbackError) {
       return staticVault.updateSettings(settings);
     }
     throw err;
@@ -235,7 +248,7 @@ export async function rotateSubscriptionSecret(): Promise<{ dashboard: Dashboard
       method: 'POST',
     });
   } catch (err) {
-    if (err instanceof StaticHostFallbackError) {
+    if (err instanceof PreviewFallbackError) {
       return staticVault.rotateSubscriptionSecret();
     }
     throw err;
@@ -246,7 +259,7 @@ export async function fetchWorkerScript(): Promise<{ script: string; dashboard: 
   try {
     return await apiRequest('/api/worker-script');
   } catch (err) {
-    if (err instanceof StaticHostFallbackError) {
+    if (err instanceof PreviewFallbackError) {
       return staticVault.getWorkerScript();
     }
     throw err;
@@ -257,7 +270,7 @@ export async function fetchIncyExport(): Promise<{ filename: string; content: st
   try {
     return await apiRequest('/api/export/incy');
   } catch (err) {
-    if (err instanceof StaticHostFallbackError) {
+    if (err instanceof PreviewFallbackError) {
       return staticVault.getIncyExport();
     }
     throw err;
@@ -268,7 +281,7 @@ export async function fetchV2RayExport(tokenId: string): Promise<{ filename: str
   try {
     return await apiRequest(`/api/export/v2ray/${encodeURIComponent(tokenId)}`);
   } catch (err) {
-    if (err instanceof StaticHostFallbackError) {
+    if (err instanceof PreviewFallbackError) {
       return staticVault.getV2RayExport(tokenId);
     }
     throw err;
@@ -286,7 +299,7 @@ export async function probeEndpoint(
       body: JSON.stringify({ target, port, sni }),
     });
   } catch (err) {
-    if (err instanceof StaticHostFallbackError) {
+    if (err instanceof PreviewFallbackError) {
       return staticVault.probeEndpoint(target, port);
     }
     throw err;
@@ -302,7 +315,7 @@ export async function probeAllCleanIps(): Promise<{
       method: 'POST',
     });
   } catch (err) {
-    if (err instanceof StaticHostFallbackError) {
+    if (err instanceof PreviewFallbackError) {
       return staticVault.probeAllCleanIps();
     }
     throw err;
@@ -313,7 +326,7 @@ export async function runIpAudit(): Promise<IpAuditResult> {
   try {
     return await apiRequest('/api/network/ip-audit');
   } catch (err) {
-    if (err instanceof StaticHostFallbackError) {
+    if (err instanceof PreviewFallbackError) {
       return staticVault.runIpAudit();
     }
     throw err;
@@ -324,7 +337,7 @@ export async function fetchD1Status(): Promise<D1StatusResult> {
   try {
     return await apiRequest('/api/d1/status');
   } catch (err) {
-    if (err instanceof StaticHostFallbackError) {
+    if (err instanceof PreviewFallbackError) {
       return staticVault.getD1Status();
     }
     throw err;
@@ -340,8 +353,8 @@ export async function syncD1Database(): Promise<{
   try {
     return await apiRequest('/api/d1/sync', { method: 'POST' });
   } catch (err) {
-    if (err instanceof StaticHostFallbackError) {
-      throw new Error('این محیط استاتیک است؛ روی Cloudflare Worker با binding دیتابیس DB، همگام‌سازی D1 به‌صورت مستقیم انجام می‌شود.');
+    if (err instanceof PreviewFallbackError) {
+      throw new Error('این محیط پیش‌نمایش استاتیک است؛ روی Cloudflare Worker با binding دیتابیس DB، همگام‌سازی D1 به‌صورت مستقیم انجام می‌شود.');
     }
     throw err;
   }

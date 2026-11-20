@@ -1,7 +1,6 @@
-// Cloudflare Worker + D1 Full-Stack Edge Proxy for proxysystemarash.ir
+// Cloudflare Worker + D1 Pure Originless Edge Proxy for proxysystemarash.ir
 // Database ID: a16983d7-1da3-4555-a1aa-f5730bccfcae (Binding: DB)
-// Supports: Full Dashboard API + Auth + D1 Persistence + /sub/:secret (V2Ray & INCY) + VLESS over WS + Anti-Probe
-import { connect } from 'cloudflare:sockets';
+// Zero top-level runtime imports — 100% Worker-only execution (API + D1 + /sub + VLESS over WS)
 
 const ADMIN_USERNAME = 'Arash';
 const PBKDF2_SALT_HEX = '381a4fa9b19f24929d0f45af389f8638';
@@ -55,8 +54,10 @@ export default {
         const d1Bound = await isD1Bound(env);
         return jsonResponse({
           ok: true,
+          mode: 'pure-cloudflare-worker',
           edge: request.cf?.colo || 'CF',
           d1Bound,
+          assetsBound: Boolean(env && env.ASSETS),
           databaseId: (env && env.D1_DATABASE_ID) || DEFAULT_SETTINGS.d1DatabaseId,
         });
       }
@@ -1012,9 +1013,7 @@ async function probeEdgeTarget(target, port) {
   try {
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), 3500);
-    const isIp = /^\d+\.\d+\.\d+\.\d+$/.test(target);
-    const testUrl = isIp ? 'https://1.1.1.1/cdn-cgi/trace' : `https://${target}/health-edge`;
-    await fetch(testUrl, { signal: controller.signal });
+    await fetch('https://1.1.1.1/cdn-cgi/trace', { signal: controller.signal });
     clearTimeout(timer);
     return {
       target,
@@ -1242,9 +1241,19 @@ function stringifyUuid(arr) {
   return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20)}`;
 }
 
+let cachedSocketConnect = null;
+async function getSocketConnect() {
+  if (!cachedSocketConnect) {
+    const mod = await import('cloudflare:sockets');
+    cachedSocketConnect = mod.connect;
+  }
+  return cachedSocketConnect;
+}
+
 async function handleTcpOutbound(remoteSocket, addressRemote, portRemote, rawClientData, webSocket, vlessResponseHeader, proxyIp) {
+  const socketConnect = await getSocketConnect();
   async function connectAndWrite(address, port) {
-    const tcpSocket = connect({ hostname: address, port });
+    const tcpSocket = socketConnect({ hostname: address, port });
     remoteSocket.value = tcpSocket;
     const writer = tcpSocket.writable.getWriter();
     await writer.write(rawClientData);

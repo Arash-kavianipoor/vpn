@@ -107,7 +107,7 @@ export default function App() {
       <aside className="hidden w-[264px] shrink-0 flex-col border-l border-[#1E293B] bg-[#0B1019] lg:flex">
         <div className="border-b border-[#1E293B] px-6 py-5">
           <div dir="ltr" className="text-right font-mono text-base font-bold text-[#E6EDF3]">
-            {dashboard?.settings.domain || 'Arashproxysystem.ir'}
+            {dashboard?.settings.domain || 'proxysystemarash.ir'}
           </div>
           <div className="mt-1 text-xs text-[#94A3B8]">
             کاربر مدیر: <span className="font-mono text-[#CBD5E1]">{username}</span>
@@ -152,7 +152,7 @@ export default function App() {
           <aside className="relative z-10 flex w-72 flex-col border-l border-[#1E293B] bg-[#0B1019]">
             <div className="flex items-center justify-between border-b border-[#1E293B] px-5 py-4">
               <span dir="ltr" className="font-mono text-sm font-bold text-[#E6EDF3]">
-                {dashboard?.settings.domain || 'Arashproxysystem.ir'}
+                {dashboard?.settings.domain || 'proxysystemarash.ir'}
               </span>
               <button
                 type="button"
@@ -207,7 +207,7 @@ export default function App() {
               </button>
               <div className="flex items-center gap-2 text-xs sm:text-sm truncate">
                 <span dir="ltr" className="font-mono font-semibold text-[#E6EDF3]">
-                  {dashboard?.settings.domain || 'Arashproxysystem.ir'}
+                  {dashboard?.settings.domain || 'proxysystemarash.ir'}
                 </span>
                 <span className="text-[#475569]">/</span>
                 <span className="font-medium text-[#94A3B8] truncate">{activeNavLabel}</span>
