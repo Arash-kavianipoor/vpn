@@ -1,0 +1,6 @@
+{
+  "name": "ArashProxy System",
+  "description": "سامانه مدیریت پروکسی ابری کلودفلر، تولید توکن VLESS و پیکربندی ضدتحریم برای V2Ray و INCY روی دامنه Arashproxysystem.ir",
+  "requestFramePermissions": [],
+  "majorCapabilities": []
+}
