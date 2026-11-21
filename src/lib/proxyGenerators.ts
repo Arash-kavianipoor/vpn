@@ -458,7 +458,7 @@ PRIMARY_DOMAIN = "${settings.domain || 'proxysystemarash.ir'}"
 
 [[d1_databases]]
 binding = "DB"
-database_name = "arashproxydb"
+database_name = "vpn"
 database_id = "${dbId}"
 `;
 }

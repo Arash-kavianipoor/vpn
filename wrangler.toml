@@ -17,5 +17,5 @@ PRIMARY_DOMAIN = "proxysystemarash.ir"
 
 [[d1_databases]]
 binding = "DB"
-database_name = "arashproxydb"
+database_name = "vpn"
 database_id = "a16983d7-1da3-4555-a1aa-f5730bccfcae"
